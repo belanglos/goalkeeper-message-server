@@ -1,0 +1,62 @@
+name: Update goalkeeper
+
+on:
+  schedule:
+    # Every Monday at 07:00 UTC
+    - cron: '0 7 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-current-goalkeeper:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute current goalkeeper
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+
+          function isoWeekInfo(date) {
+            const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+            const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
+            d.setUTCDate(d.getUTCDate() - dayNum + 3); // nearest Thursday
+            const isoYear = d.getUTCFullYear();
+            const firstThursday = new Date(Date.UTC(isoYear, 0, 4));
+            const fDayNum = (firstThursday.getUTCDay() + 6) % 7;
+            firstThursday.setUTCDate(firstThursday.getUTCDate() - fDayNum + 3);
+            const isoWeek = 1 + Math.round((d - firstThursday) / (7 * 24 * 3600 * 1000));
+            return { isoYear, isoWeek };
+          }
+
+          const { isoYear, isoWeek } = isoWeekInfo(new Date());
+
+          const schedule = JSON.parse(fs.readFileSync('goalkeeper-schedule.json', 'utf8'));
+          const yearSchedule = schedule[String(isoYear)] || {};
+          const name = yearSchedule[String(isoWeek)];
+
+          if (!name) {
+            console.warn(`No goalkeeper found for ISO year ${isoYear}, week ${isoWeek}. Falling back to "Unassigned".`);
+          }
+
+          const current = { year: isoYear, week: isoWeek, name: name || 'Unassigned' };
+          fs.mkdirSync('docs', { recursive: true });
+          fs.writeFileSync('docs/current.json', JSON.stringify(current, null, 2) + '\n');
+          console.log('Wrote docs/current.json:', current);
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/current.json
+          if git diff --staged --quiet; then
+            echo "No change to docs/current.json, skipping commit."
+          else
+            git commit -m "Update current goalkeeper"
+            git push
+          fi
