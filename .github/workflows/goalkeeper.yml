@@ -47,6 +47,8 @@ jobs:
           fs.mkdirSync('docs', { recursive: true });
           fs.writeFileSync('docs/current.json', JSON.stringify(current, null, 2) + '\n');
           console.log('Wrote docs/current.json:', current);
+
+          fs.appendFileSync(process.env.GITHUB_ENV, `GOALKEEPER_NAME=${current.name}\nGOALKEEPER_WEEK=${current.week}\n`);
           EOF
 
       - name: Commit and push
@@ -60,3 +62,11 @@ jobs:
             git commit -m "Update current goalkeeper"
             git push
           fi
+
+      - name: Notify Microsoft Teams
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          MESSAGE="⚽ This week's goalkeeper is: ${GOALKEEPER_NAME} (week ${GOALKEEPER_WEEK})"
+          PAYLOAD=$(node -e "console.log(JSON.stringify({ text: process.argv[1] }))" "$MESSAGE")
+          curl -sf -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$TEAMS_WEBHOOK_URL"
