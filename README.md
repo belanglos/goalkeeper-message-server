@@ -24,8 +24,8 @@ and posts an announcement to a Microsoft Teams channel via incoming webhook.
      `{ "year": 2026, "week": 34, "name": "Alice" }`.
    - Commits and pushes the change to `main` as `github-actions[bot]` (a
      no-op if the file didn't change).
-   - Posts a message to Microsoft Teams via the incoming webhook URL stored
-     in the `TEAMS_WEBHOOK_URL` repository secret, e.g.
+   - Posts a message to Microsoft Teams, as an Adaptive Card, via the webhook
+     URL stored in the `TEAMS_WEBHOOK_URL` repository secret, e.g.
      `⚽ This week's goalkeeper is: Alice (week 34)`.
 3. GitHub Pages serves the `docs/` folder, so `docs/current.json` is reachable
    at a public URL. A Slack Workflow Builder workflow calls that URL to
@@ -55,8 +55,11 @@ in the GitHub UI:
 3. **Point the Slack Workflow Builder workflow** at the Pages URL from step 1
    (an HTTP request / webhook step reading `current.json`) to surface the
    `name` field in your Slack message.
-4. **Add the Teams webhook secret**: create an incoming webhook for the
-   target Teams channel (Teams → channel → Connectors/Workflows → "Incoming
-   Webhook"), then add its URL as a repo secret: Settings → Secrets and
-   variables → Actions → New repository secret → name it
-   `TEAMS_WEBHOOK_URL`. Without this secret the notify step will fail.
+4. **Add the Teams webhook secret**: in the target Teams channel, go to
+   Workflows → search for and add "Post to a channel when a webhook request
+   is received" (the legacy "Incoming Webhook" connector is retired by
+   Microsoft; this Power Automate–backed workflow replaces it and requires
+   the POSTed body to be an Adaptive Card, which is what this workflow
+   sends). Copy the generated webhook URL and add it as a repo secret:
+   Settings → Secrets and variables → Actions → New repository secret →
+   name it `TEAMS_WEBHOOK_URL`. Without this secret the notify step will fail.
