@@ -67,7 +67,7 @@ jobs:
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
         run: |
-          MESSAGE="⚽ This week's goalkeeper is: ${GOALKEEPER_NAME} (week ${GOALKEEPER_WEEK})"
+          MESSAGE="⚽ This week's goalkeeper is: ${GOALKEEPER_NAME} (week ${GOALKEEPER_WEEK})\nCheck the confluence page here: https://confluence.sys.kth.se/confluence/x/94EMFQ"
           PAYLOAD=$(node -e "
             const text = process.argv[1];
             console.log(JSON.stringify({
